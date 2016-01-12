@@ -1,0 +1,15 @@
+{
+  "name": "kosmos",
+  "version": "0.1.0",
+  "description": "React Static Site Generator",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "react",
+    "static"
+  ],
+  "author": "Cameron J Roe <cameronjroe@gmail.com> (http://cameronjroe.com/)",
+  "license": "MIT"
+}
