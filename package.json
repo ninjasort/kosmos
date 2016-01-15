@@ -11,5 +11,7 @@
     "static"
   ],
   "author": "Cameron J Roe <cameronjroe@gmail.com> (http://cameronjroe.com/)",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {}
 }
