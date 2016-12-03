@@ -1,4 +1,4 @@
-import path, { resolve } from 'path'
+import path, { resolve, join } from 'path'
 import autoprefixer from 'autoprefixer'
 import ExtractTextPlugin from 'extract-text-webpack-plugin'
 import HtmlWebpackPlugin from 'html-webpack-plugin'
@@ -178,5 +178,9 @@ export default async function createCompiler(dir) {
     }
   }
 
+  return {
+    config,
+    compiler: webpack(config)
+  }
 
 }

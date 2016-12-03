@@ -25,9 +25,27 @@ test.cb('resolves the correct basePath', t => {
 // Webpack Config
 // --------------------------------------------------------------------------------
 
-test.todo('webpack config has context')
+let port = 3000
 
-test.todo('webpack config has entry')
+test.before(t => {
+  basePath = resolve(__dirname + '/fixtures/basic')
+  server = new Kosmos({ basePath, hotReload: true })
+})
+
+test.beforeEach(t => {
+  port += 1
+})
+
+test('webpack config has context', async t => {
+  await server.listen(port)
+  t.is(server.reloader.config.context, process.cwd())
+})
+
+test('webpack config has entry', async t => {
+  await server.listen(port)
+  const { main } = server.reloader.config.entry
+  t.truthy(main.indexOf('webpack-dev-server/client?http://0.0.0.0:3000') > -1, 'with webpack-dev-server')
+})
 
 test.todo('webpack config has output')
 

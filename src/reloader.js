@@ -3,8 +3,10 @@ import webpackDevMiddleware from 'webpack-dev-middleware'
 import webpackHotMiddleware from 'webpack-hot-middleware'
 
 export default class Reload {
-  constructor() {
-
+  constructor(basePath) {
+    this.basePath = basePath
+    this.config = {}
+    this.compiler = null
   }
   
   async start() {
@@ -12,7 +14,9 @@ export default class Reload {
   }
 
   async startMiddleware() {
-    const compiler = await webpack(this.dir, { hotReload: true, dev: this.dev })
+    const { config, compiler } = await webpack(this.basePath, { hotReload: true, dev: this.dev })
+    this.config = config
+    this.compiler = compiler
   }
 
 }

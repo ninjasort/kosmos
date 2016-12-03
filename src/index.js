@@ -42,27 +42,16 @@ export default class Kosmos {
   constructor(options) {
     this.options = options || {}
     this.app = express()
-    this.reloader = options.hotReload ? new Reloader() : null
+    this.reloader = options.hotReload ? new Reloader(options.basePath) : null
 
     // this.headers()
     // this.security()
     // this.useStatic()
     // this.useRouter()
-    this.start()
   }
 
   get basePath() {
     return this.options.basePath
-  }
-  
-  /**
-   * Start server
-   */
-  start() {
-    if (this.reloader) {
-
-      // await this.hotReloader.run(req, res)
-    }
   }
   
   /**
@@ -214,6 +203,11 @@ export default class Kosmos {
    * @param  {number} port
    */
   async listen(port) {
+  
+    if (this.reloader) {
+      await this.reloader.start()
+    }
+
     await new Promise((resolve, reject) => {
       this.app.listen(port, (err) => {
         if (err) {

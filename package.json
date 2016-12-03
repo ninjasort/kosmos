@@ -67,6 +67,7 @@
     "babel-preset-react": "^6.16.0",
     "babel-preset-stage-0": "^6.16.0",
     "babel-register": "^6.18.0",
+    "tap-spec": "^4.1.1",
     "webpack": "2.1.0-beta.5",
     "webpack-md5-hash": "^0.0.5"
   }
