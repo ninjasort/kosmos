@@ -1,5 +1,6 @@
 # kosmos
-React Static Site Generator
+
+An Isomorphic, Real-time Redux App Framework with Offline Support
 
 ## How to use
 
