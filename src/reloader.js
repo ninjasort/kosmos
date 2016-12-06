@@ -17,6 +17,12 @@ export default class Reload {
     const { config, compiler } = await webpack(this.basePath, { hotReload: true, dev: this.dev })
     this.config = config
     this.compiler = compiler
+
+    this.webpackDevMiddleware = webpackDevMiddleware(compiler, {
+      publicPath: '/_webpack/',
+      noInfo: true,
+      quiet: true
+    })
   }
 
 }

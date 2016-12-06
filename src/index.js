@@ -7,7 +7,9 @@ import React from 'react'
 import helmet from 'helmet'
 import ReactHelmet from 'react-helmet'
 import Reloader from './reloader'
-import { Router, RouterContext, match } from 'react-router'
+import { Router, RouterContext, match, browserHistory } from 'react-router'
+import { Provider } from 'react-redux'
+import { syncHistoryWithStore } from 'react-router-redux'
 import bodyParser from 'body-parser'
 import cors from 'cors'
 // import { serverWaitRender } from 'mobx-server-wait'
@@ -17,9 +19,9 @@ import cors from 'cors'
 import color from 'cli-color'
 import hpp from 'hpp'
 
-// Local imports
-// import routes, { NotFound } from './routes'
-// import Store from './store'
+import configureStore from './redux/store'
+
+// const history = syncHistoryWithStore(browserHistory, store)
 
 //=========================================================
 //  ENVIRONMENT VARS
@@ -31,11 +33,7 @@ const ENV_PRODUCTION = NODE_ENV === 'production'
 const ENV_TEST = NODE_ENV === 'test'
 
 const HOST = '0.0.0.0'
-const PORT = 3000
-
-// Ground work
-// const port = (parseInt(process.env.PORT, 10) || 3000) - !ENV_PRODUCTION
-// const debugsw = (...args) => debug(color.yellow('server-wait'), ...args)
+const PORT = process.env.PORT || 3000
 
 export default class Kosmos {
   
@@ -43,11 +41,23 @@ export default class Kosmos {
     this.options = options || {}
     this.app = express()
     this.reloader = options.hotReload ? new Reloader(options.basePath) : null
+  }
 
-    // this.headers()
-    // this.security()
-    // this.useStatic()
+  async bootstrap() {
+    this.store = await configureStore(this.options.basePath)
+    
+    try {
+      const getRoutes = require(resolve(this.options.basePath, './src/index')).default
+      this.routes = getRoutes(this.store.getState)
+    } catch (e) {
+      console.log(e)
+    }
+
+    this.headers()
+    this.security()
+    this.useStatic()
     // this.useRouter()
+    this.handleErrors()
   }
 
   get basePath() {
@@ -111,39 +121,14 @@ export default class Kosmos {
    */
   useRouter() {
     // Route handler that rules them all!
-    this.app.get('*', (req, res, next) => {
-      res.send('It works!')
-      // res.set('content-type', 'text/html')
-      // Start writing output
-      // res.write(
-      // `
-      // <!doctype html>
-      // <html>
-      //   <head>
-      //     <meta charset="utf-8">
-      //     <meta name="viewport" content="width=device-width, initial-scale=1">
-      //     ${ENV_PRODUCTION ? '<link rel="stylesheet" type="text/css" href="/styles.css">' : ''}
-      //     <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=es6"></script>
-      //     <script src="/vendor.js" defer></script>
-      //     <script src="/client.js" defer></script>
-      //     <!-- CHUNK -->
-      // `)
-      // res.flush()
-      // Some debugging info
-      // debug(color.cyan('http'), '%s - %s %s', req.ip, req.method, req.url)
-    })
+    this.app.get('*', this.matchReactRouter.bind(this))
   }
   
   /**
    * Match react router
    */
-  matchReactRouter() {
-    // Do a router match
-    match({
-      routes: (<Router>{routes}</Router>),
-      location: req.url,
-    },
-    (err, redirect, props) => {
+  matchReactRouter(req, res, next) {
+    match({ routes: (<Router>{this.routes}</Router>), location: req.url }, (err, redirect, props) => {
 
       // Sanity checks
       if (err) {
@@ -154,47 +139,37 @@ export default class Kosmos {
         res.status(404)
       }
 
-      // // Setup store and context for provider
-      // const store = new Store()
-
-      // // Add env variables
-      // store.env = {
-      //   NODE_ENV,
-      // }
-
-      // Setup the root but don't add $mobx as property to provider.
-      // const root = (
-      //   <Provider {...omit(store, k => (k !== '$mobx'))}>
-      //     <RouterContext {...props} />
-      //   </Provider>
-      // )
+      const root = (
+        <Provider store={this.store.bind(this)}>
+          <RouterContext {...props} />
+        </Provider>
+      )
 
       // Main render function
-      // const render = (html, state) => {
-      //   const { meta, title, link } = ReactHelmet.rewind()
-      //   res.write(`${meta} ${title} ${link}
-      //     </head>
-      //     <body>
-      //       <div id="root">${html}</div>
-      //       <script>
-      //         window.__INITIAL_STATE__ = '${state.replace(/\\/g, '\\\\')}'
-      //       </script>
-      //     </body>
-      //   </html>`)
-      //   res.end()
-      // }
-
-      // Render when all actions have completed their promises
-      // const cancel = serverWaitRender({
-      //   store,
-      //   root,
-      //   debug: debugsw,
-      //   onError: next,
-      //   render,
-      // })
-
-      // Cancel server rendering
-      // req.on('close', cancel)
+      const render = (html, state) => {
+        const { meta, title, link } = ReactHelmet.rewind()
+        res.send(
+          `<!doctype html>
+          <html>
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              ${ENV_PRODUCTION ? '<link rel="stylesheet" type="text/css" href="/styles.css">' : ''}
+              <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=es6"></script>
+              <script src="/vendor.js" defer></script>
+              <script src="/client.js" defer></script>
+              <!-- CHUNK -->
+              ${meta} ${title} ${link}
+            </head>
+            <body>
+              <div id="root">${html}</div>
+              <script>
+                window.__INITIAL_STATE__ = '${state.replace(/\\/g, '\\\\')}'
+              </script>
+            </body>
+          </html>`
+        )
+      }
     })
   }
 
@@ -203,35 +178,29 @@ export default class Kosmos {
    * @param  {number} port
    */
   async listen(port) {
+
+    await this.bootstrap()
   
     if (this.reloader) {
       await this.reloader.start()
     }
 
-    await new Promise((resolve, reject) => {
-      this.app.listen(port, (err) => {
-        if (err) {
-          return reject(err)
-        }
-        resolve()
-      })
+    // await new Promise((resolve, reject) => {
+    //   this.app.listen(port, (err) => {
+    //     if (err) {
+    //       return reject(err)
+    //     }
+    //     resolve()
+    //   })
+    // })
+  }
+
+  handleErrors() {
+    this.app.use((err, req, res) => {
+      console.error(err.stack)
+      res.send(500, { message: err.message })
     })
   }
 
 }
 
-// app.use((err, req, res, next) => {
-//   res.end(`</head><body><h1>500 Server Error</h1><p>${err}</p></body></html>`)
-//   next(err)
-// })
-
-// // Create HTTP Server
-// const server = http.createServer(app)
-
-// // Start
-// const listener = server.listen(port, err => {
-//   if (err) throw err
-//   debug(color.cyan('http'), `🚀  started on port ${port}`)
-// })
-
-// export default listener

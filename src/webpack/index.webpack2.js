@@ -31,31 +31,22 @@ export default async function createCompiler(dir, { hotReload = false }) {
       test: /\.js$/, 
       exclude: /node_modules/,
       loader: 'babel-loader',
-      query: {
+      options: {
         presets: [
           'latest',
           'react',
           'stage-0'
-        ],
-        plugins: [
-          require.resolve('babel-plugin-react-require'),
-          [require.resolve('babel-plugin-module-resolver'), 
-            {
-              root: [resolve(__dirname, '../../node_modules')],
-              alias: {
-                react: require.resolve('react'),
-                // 'next/link': require.resolve('../../lib/link'),
-                // 'next/css': require.resolve('../../lib/css'),
-                // 'next/head': require.resolve('../../lib/head')
-              }
-            }
-          ]
         ]
       }
     },
     scss: {
       test: /\.scss$/, 
-      loader: 'style-loader!css-loader!postcss-loader!sass-loader'
+      loader: 'style-loader!css-loader!postcss-loader!sass-loader',
+      options: {
+        outputStyle: 'compressed',
+        precision: 10,
+        sourceComments: false
+      }
     }
   }
   
@@ -63,25 +54,21 @@ export default async function createCompiler(dir, { hotReload = false }) {
   //---------------------------------------------------------
   config.resolve = {
     extensions: ['.js', '.scss', '.json'],
-    root: [kosmosModules, dir, 'src', 'node_modules']
+    modules: [
+      kosmosModules, 
+      dir, 
+      'src', 
+      'node_modules'
+    ]
   }
   
   config.resolveLoader = {
-    root: [
+    extensions: ['.js', '.scss', '.json'],
+    modules: [
       kosmosModules,
       join(__dirname, 'loaders')
     ]
   }
-
-  config.sassLoader = {
-    outputStyle: 'compressed',
-    precision: 10,
-    sourceComments: false
-  }
-
-  config.postcss = [
-    autoprefixer({ browsers: ['last 3 versions'] })
-  ]
   
   //  Plugins
   //---------------------------------------------------------
@@ -136,27 +123,23 @@ export default async function createCompiler(dir, { hotReload = false }) {
     //  Loaders
     //---------------------------------------------------------
     config.module = {
-      loaders: [
+      rules: [
         loaders.js,
         loaders.scss
       ]
     }
-
-    config.externals = [
-      'react',
-      'react-dom',
-      {
-        [require.resolve('react')]: 'react',
-        // [require.resolve('../../lib/link')]: 'next/link',
-        // [require.resolve('../../lib/css')]: 'next/css',
-        // [require.resolve('../../lib/head')]: 'next/head'
-      }
-    ]
     
     //  Plugins
     //---------------------------------------------------------
     if (hotReload) {
       config.plugins.push(
+        new webpack.LoaderOptionsPlugin({
+          options: {
+            postcss: [
+              autoprefixer({ browsers: ['last 3 versions'] })
+            ]
+          }
+        }),
         new webpack.optimize.OccurrenceOrderPlugin(),
         new webpack.HotModuleReplacementPlugin(),
         new webpack.NoErrorsPlugin(),

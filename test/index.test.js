@@ -47,11 +47,25 @@ test('webpack config has entry', async t => {
   t.truthy(main.indexOf('webpack-dev-server/client?http://0.0.0.0:3000') > -1, 'with webpack-dev-server')
 })
 
-test.todo('webpack config has output')
+test('webpack config has output', async t => {
+  await server.listen(port)
+  const output = server.reloader.config.output
+  t.is(output.filename, '[name].js')
+  t.is(output.publicPath, '/')
+  t.is(output.path, resolve(basePath, '.kosmos'))
+})
 
-test.todo('webpack config has plugins')
+test('webpack config has plugins', async t => {
+  await server.listen(port)
+  const plugins = server.reloader.config.plugins
+  t.truthy(plugins.length)
+})
 
-test.todo('webpack config has loaders')
+test('webpack config has loaders', async t => {
+  await server.listen(port)
+  const loaders = server.reloader.config.module.loaders
+  t.truthy(loaders.length > 0)
+})
 
 test.todo('webpack config has a devtool')
 
